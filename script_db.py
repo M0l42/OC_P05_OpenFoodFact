@@ -2,11 +2,9 @@ import requests
 import os
 import json
 import random
-from fake_useragent.fake import UserAgent
 import mysql.connector
 
 
-ua = UserAgent()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path_json = os.path.join(dir_path, "json")
 dir_path_product = os.path.join(dir_path, "product")
@@ -14,10 +12,10 @@ os.makedirs(dir_path_json, exist_ok=True)
 os.makedirs(dir_path_product, exist_ok=True)
 json_path = os.path.join(dir_path_json, "categories.json")
 
-# payload = {"action": "process",
-#            "tag_01": "France",
-#            "page_size": 50,
-#            "json": 1}
+payload = {"action": "process",
+           "tag_01": "France",
+           "page_size": 50,
+           "json": 1}
 
 
 def put_data(url, path):

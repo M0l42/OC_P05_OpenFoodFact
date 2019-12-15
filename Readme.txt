@@ -6,7 +6,11 @@ This project is divided in two part :
 -The Creation and the population of the database
     You need to have MySQL installed and set
     Then run the python's script "script_db.py"
-    It will Create the Tables Categories, Products, Favorite
+        '--host' to define the host ( default : localhost )
+        '-U', '--username' to define the user ( default : nathan )
+        '-p', '--password' to define the password ( default : None )
+        '-d', '--database' to define the database name ( default : pure-beurre )
+    It will Create database and the tables Categories, Products, Favorite if it doesn't exist
     and it will populate Categories with the file "categories.json" ( to have limited product and have a lighter database )
     then it will populate the Category's Product via the API of OpenFoodFact sorted by their popularity
 

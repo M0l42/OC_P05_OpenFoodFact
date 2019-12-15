@@ -6,6 +6,13 @@ import mysql.connector
 
 
 def set_params(arg_value, default_value):
+    """
+    put the default value in the argument if the users didn't put one
+    :param arg_value:
+    :param default_value:
+    :return:
+        Value of the argument or the default
+    """
     if arg_value:
         return arg_value
     else:
@@ -13,6 +20,15 @@ def set_params(arg_value, default_value):
 
 
 def check_error(check_data, first_arg, second_arg, encode=False):
+    """
+    Check if the json tags are valid
+    :param check_data:
+    :param first_arg:
+    :param second_arg:
+    :param encode:
+    :return:
+        Value of the tags or None
+    """
     try:
         if second_arg:
             return check_data[first_arg][second_arg]
@@ -26,6 +42,13 @@ def check_error(check_data, first_arg, second_arg, encode=False):
 
 
 def connect_to_database():
+    """
+    connect to the database
+    create database if it doens't exist
+    :return:
+        database
+        cursor
+    """
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
         '--host', type=str, dest='host',
@@ -64,6 +87,8 @@ def connect_to_database():
 def main():
     mydb, my_cursor = connect_to_database()
 
+    # Creating our tables
+
     my_cursor.execute('CREATE TABLE IF NOT EXISTS Categories (Id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), '
                       'tags VARCHAR(255), products INTEGER(10))')
 
@@ -80,6 +105,7 @@ def main():
                       'Substitute_id INTEGER,'
                       'FOREIGN KEY(Product_id) REFERENCES Products(Id) ON DELETE CASCADE)')
 
+    # Load the categories stock in a json file,
     headers = {"user-agent": "python-app/0.0.1"}
     current_path = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(current_path, "categories.json")
@@ -93,6 +119,7 @@ def main():
         name = category['name']
         tags = category['id']
         category_url = categories_url + tags + ".json"
+        # Get the number of product available in this category ( can change )
         r = requests.get(category_url, headers=headers)
         product = r.json()["count"]
         my_cursor.execute(sql_formula_category, (name, tags, product))
@@ -111,6 +138,8 @@ def main():
                           "%s, %s, %s, %s, %s, %s)"
 
     for Id, tags, products in my_result:
+        # Load all the product of the category and put in database
+
         payload = {"action": "process",
                    "tagtype_0": "categories",
                    "tag_contains_0": "contains",

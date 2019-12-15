@@ -2,6 +2,11 @@ from script_db import connect_to_database
 
 
 def check_int(input_str):
+    """
+    Function to make sure the user press a number and not something else
+    :param input_str:
+    :return:
+    """
     choice = input(input_str)
     while type(choice) is str:
         try:
@@ -12,6 +17,15 @@ def check_int(input_str):
 
 
 def find_substitute(my_cursor, chosen_category, sub_factor, sub_value, max=0):
+    """
+    Find a substitute depending depending on an certain factor like the nutrition_grades
+    :param my_cursor:
+    :param chosen_category:
+    :param sub_factor:
+    :param sub_value:
+    :param max:
+    :return:
+    """
     select_substitute = "SELECT id, name, nutrition_grade FROM Products " \
                         "WHERE Categories_id = %s AND %s = %s" % (chosen_category, sub_factor, sub_value)
     my_cursor.execute(select_substitute)
@@ -34,6 +48,7 @@ def main():
                            "Entrer 3 pour partir\n")
 
         if choice == 1:
+            # Find a product to substitute
             my_cursor.execute('Select Id, name, products FROM Categories')
 
             categories = my_cursor.fetchall()
@@ -65,6 +80,7 @@ def main():
             print("Produit sauvegardé dans Favori")
 
         elif choice == 2:
+            # Show user's Favorite product and substitute
             my_cursor.execute("SELECT * FROM Favorite")
             favorite_result = my_cursor.fetchall()
 

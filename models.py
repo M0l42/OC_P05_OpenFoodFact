@@ -1,8 +1,21 @@
 class Model:
     models = {}
+    command = ""
 
     def save(self):
-        for key in models:
+        for key in self.models:
+            if self.models[key] == CharField:
+                self.command.join(self.command, ",%s VARCHAR(%d)" % (key, self.models[key].max_length))
+            if self.models[key] == TextField:
+                self.command.join(self.command, ",%s TEXT" % key)
+            if self.models[key] == IntField:
+                self.command.join(self.command, ",%s INTEGER(%d)" % (key, self.models[key].length))
+            if self.models[key] == ForeignKey:
+                self.command.join(self.command, ",%s INTEGER,"
+                                                "FOREIGN KEY(%s) REFERENCES %s(Id) ON DELETE CASCADE" % (
+                                                 key, key, self.models[key].models
+                                                )
+                                  )
 
 
 

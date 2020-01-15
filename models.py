@@ -2,21 +2,23 @@ class Model:
     models = {}
     command = ""
 
-    def save(self):
+    @classmethod
+    def get_classname(cls):
+        return cls.__name__
+
+    def save(self, my_cursor):
+        self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT," % self.get_classname()
         for key in self.models:
             if self.models[key] == CharField:
-                self.command.join(self.command, ",%s VARCHAR(%d)" % (key, self.models[key].max_length))
+                self.command += ",%s VARCHAR(%d)" % (key, self.models[key].max_length)
             if self.models[key] == TextField:
-                self.command.join(self.command, ",%s TEXT" % key)
+                self.command += ",%s TEXT" % key
             if self.models[key] == IntField:
-                self.command.join(self.command, ",%s INTEGER(%d)" % (key, self.models[key].length))
+                self.command += ",%s INTEGER(%d)" % (key, self.models[key].length)
             if self.models[key] == ForeignKey:
-                self.command.join(self.command, ",%s INTEGER,"
-                                                "FOREIGN KEY(%s) REFERENCES %s(Id) ON DELETE CASCADE" % (
-                                                 key, key, self.models[key].models
-                                                )
-                                  )
-
+                self.command += ",%s INTEGER, FOREIGN KEY(%s) REFERENCES %s(Id) ON DELETE CASCADE" % \
+                                (key, key, self.models[key].models)
+        my_cursor.execute(self.command)
 
 
 class CharField:

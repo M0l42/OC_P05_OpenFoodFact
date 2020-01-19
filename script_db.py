@@ -3,6 +3,7 @@ import os
 import json
 import argparse
 import mysql.connector
+from models import Product, Category, Favorite
 
 
 def set_params(arg_value, default_value):
@@ -89,23 +90,12 @@ def main():
 
     # Creating our tables
 
-    my_cursor.execute('CREATE TABLE IF NOT EXISTS Categories (Id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), '
-                      'tags VARCHAR(255), products INTEGER(10))')
-
-    my_cursor.execute('CREATE TABLE IF NOT EXISTS Products (Id INT PRIMARY KEY AUTO_INCREMENT,'
-                      'name VARCHAR(255), ingredients TEXT, nutrition_grade VARCHAR(1), code VARCHAR(255), url TEXT,'
-                      'fat_100 INTEGER(10), fat_lvl VARCHAR(10),'
-                      'saturated_fat_100 INTEGER(10), saturated_fat_lvl VARCHAR(10),'
-                      'sugar_100 INTEGER(10), sugar_lvl VARCHAR(10),'
-                      'salt_100 INTEGER(10), salt_lvl VARCHAR(10), store TEXT,'
-                      'Categories_id INTEGER, FOREIGN KEY(Categories_id) REFERENCES Categories(Id) ON DELETE CASCADE)')
-
-    my_cursor.execute('CREATE TABLE IF NOT EXISTS Favorite (Id INT PRIMARY KEY AUTO_INCREMENT,'
-                      'Product_id INTEGER,'
-                      'Substitute_id INTEGER,'
-                      'FOREIGN KEY(Product_id) REFERENCES Products(Id) ON DELETE CASCADE)')
+    Category().save(my_cursor)
+    Product().save(my_cursor)
+    Favorite().save(my_cursor)
 
     # Load the categories stock in a json file,
+
     headers = {"user-agent": "python-app/0.0.1"}
     current_path = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(current_path, "categories.json")

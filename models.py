@@ -7,7 +7,7 @@ class Model:
         return cls.__name__
 
     def save(self, my_cursor):
-        self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT," % self.get_classname()
+        self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT)" % self.get_classname()
         for key in self.models:
             if self.models[key] == CharField:
                 self.command += ",%s VARCHAR(%d)" % (key, self.models[key].max_length)
@@ -20,16 +20,24 @@ class Model:
                                 (key, key, self.models[key].models)
         my_cursor.execute(self.command)
 
+    def insert_data(self, my_cursor):
+        self.command = "INSERT INTO %s (" % self.get_classname()
+        keys = []
+        for key in self.models:
+            keys.append(key)
+        self.command += ",".join("%s" % key for key in keys)
+        self.command += ") Value (" + ",".join("%s" % self.models[key].value for key in keys) + ")"
+
 
 class CharField:
-    def __init__(self, max_length, text=None):
+    def __init__(self, max_length, value=None):
         self.max_length = max_length
-        self.text = text
+        self.value = value
 
 
 class TextField:
-    def __init__(self, text=None):
-        self.test = text
+    def __init__(self, value=None):
+        self.value = value
 
 
 class IntField:
@@ -39,8 +47,9 @@ class IntField:
 
 
 class ForeignKey:
-    def __init__(self, models):
+    def __init__(self, models, value=None):
         self.models = models
+        self.value = value
 
 
 class Product(Model):

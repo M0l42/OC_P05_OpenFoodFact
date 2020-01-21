@@ -7,7 +7,7 @@ class Model:
         return cls.__name__
 
     def save(self, my_cursor):
-        self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT)" % self.get_classname()
+        self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT" % self.get_classname()
         for key in self.models:
             if self.models[key] == CharField:
                 self.command += ",%s VARCHAR(%d)" % (key, self.models[key].max_length)
@@ -18,6 +18,7 @@ class Model:
             if self.models[key] == ForeignKey:
                 self.command += ",%s INTEGER, FOREIGN KEY(%s) REFERENCES %s(Id) ON DELETE CASCADE" % \
                                 (key, key, self.models[key].models)
+        self.command += ")"
         my_cursor.execute(self.command)
 
     def insert_data(self, my_cursor):
@@ -27,6 +28,7 @@ class Model:
             keys.append(key)
         self.command += ",".join("%s" % key for key in keys)
         self.command += ") Value (" + ",".join("%s" % self.models[key].value for key in keys) + ")"
+        my_cursor.execute(self.command)
 
 
 class CharField:
@@ -73,3 +75,15 @@ class Favorite(Model):
         "Product_id": ForeignKey("Product"),
         "Substitute_id": IntField(length=15),
     }
+
+
+def get_all(model, mycursor):
+    data = []
+    command = "SELECT " + ",".join("%s" % key for key in model.models)
+    command += "FROM " + model.get_classname()
+    mycursor.execute(command)
+    result = mycursor.fetchall()
+
+    for key in model:
+        if key == result[key]:
+            pass

@@ -3,7 +3,7 @@ import os
 import json
 import argparse
 import mysql.connector
-from models import Product, Category, Favorite
+from models import Product, Category, Favorite, get_all
 
 
 def set_params(arg_value, default_value):
@@ -112,12 +112,15 @@ def main():
         # Get the number of product available in this category ( can change )
         r = requests.get(category_url, headers=headers)
         product = r.json()["count"]
-        my_cursor.execute(sql_formula_category, (name, tags, product))
+        # my_cursor.execute(sql_formula_category, (name, tags, product))
+        Category().insert_data()
         mydb.commit()
 
-    my_cursor.execute('Select Id, tags, products FROM Categories')
+    # my_cursor.execute('Select Id, tags, products FROM Categories')
+    #
+    # my_result = my_cursor.fetchall()
 
-    my_result = my_cursor.fetchall()
+    test = get_all(Category(), my_cursor)
 
     search_url = "https://fr.openfoodfacts.org/cgi/search.pl?"
     sql_formula_product = "INSERT INTO Products (name, ingredients, nutrition_grade, url, code," \

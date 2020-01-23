@@ -78,12 +78,20 @@ class Favorite(Model):
 
 
 def get_all(model, mycursor):
-    data = []
     command = "SELECT " + ",".join("%s" % key for key in model.models)
     command += "FROM " + model.get_classname()
     mycursor.execute(command)
     result = mycursor.fetchall()
+    query = []
 
-    for key in model:
-        if key == result[key]:
-            pass
+    for data in result:
+        if model == Product:
+            query.append(Product())
+        if model == Category:
+            query.append(Category())
+        if model == Favorite:
+            query.append(Favorite())
+        for key in model:
+            if key == data[key]:
+                query[-1].model[key] = data[key]
+    return query

@@ -1,5 +1,6 @@
 class Model:
-    models = {}
+    model = {}
+    id = int()
     command = ""
 
     @classmethod
@@ -8,26 +9,29 @@ class Model:
 
     def save(self, my_cursor):
         self.command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT" % self.get_classname()
-        for key in self.models:
-            if self.models[key] == CharField:
-                self.command += ",%s VARCHAR(%d)" % (key, self.models[key].max_length)
-            if self.models[key] == TextField:
+        for key in self.model:
+            if type(self.model[key]) == CharField:
+                self.command += ",%s VARCHAR(%d)" % (key, self.model[key].max_length)
+            if type(self.model[key]) == TextField:
                 self.command += ",%s TEXT" % key
-            if self.models[key] == IntField:
-                self.command += ",%s INTEGER(%d)" % (key, self.models[key].length)
-            if self.models[key] == ForeignKey:
+            if type(self.model[key]) == IntField:
+                self.command += ",%s INTEGER(%d)" % (key, self.model[key].length)
+            if type(self.model[key]) == ForeignKey:
                 self.command += ",%s INTEGER, FOREIGN KEY(%s) REFERENCES %s(Id) ON DELETE CASCADE" % \
-                                (key, key, self.models[key].models)
-        self.command += ")"
+                                (key, key, self.model[key].models)
+        self.command += ") CHARACTER SET utf8 COLLATE utf8_bin"
         my_cursor.execute(self.command)
 
     def insert_data(self, my_cursor):
         self.command = "INSERT INTO %s (" % self.get_classname()
         keys = []
-        for key in self.models:
-            keys.append(key)
+        values = []
+        for key in self.model:
+            if self.model[key].value:
+                keys.append(key)
+                values.append(self.model[key].value)
         self.command += ",".join("%s" % key for key in keys)
-        self.command += ") Value (" + ",".join("%s" % self.models[key].value for key in keys) + ")"
+        self.command += ") Value (" + ",".join('"%s"' % value for value in values) + ")"
         my_cursor.execute(self.command)
 
 
@@ -57,8 +61,20 @@ class ForeignKey:
 class Product(Model):
     model = {
         "name": CharField(max_length=255),
-        "code": IntField(length=20),
-        "ingredients": TextField()
+        "code": CharField(max_length=100),
+        "url": TextField(),
+        "ingredients": TextField(),
+        "nutrition_grade": CharField(max_length=10),
+        "fat_100": IntField(length=10), 
+        "fat_lvl": CharField(max_length=10),
+        "saturated_fat_100": IntField(length=10),
+        "saturated_fat_lvl": CharField(max_length=10),
+        "sugar_100": IntField(length=10),
+        "sugar_lvl": CharField(max_length=10),
+        "salt_100": IntField(length=10),
+        "salt_lvl": CharField(max_length=10),
+        "store": TextField(),
+        "category": ForeignKey("Category")
     }
 
 
@@ -77,21 +93,27 @@ class Favorite(Model):
     }
 
 
-def get_all(model, mycursor):
-    command = "SELECT " + ",".join("%s" % key for key in model.models)
-    command += "FROM " + model.get_classname()
+def get_all(models, mycursor):
+    keys = ["Id"]
+    for key in models.model:
+        keys.append(key)
+    command = "SELECT " + ",".join("%s" % key for key in keys)
+    command += " FROM " + models.get_classname()
     mycursor.execute(command)
-    result = mycursor.fetchall()
+    results = mycursor.fetchall()
+
     query = []
 
-    for data in result:
-        if model == Product:
+    for data in results:
+        if type(models) == Product:
             query.append(Product())
-        if model == Category:
+        if type(models) == Category:
             query.append(Category())
-        if model == Favorite:
+        if type(models) == Favorite:
             query.append(Favorite())
-        for key in model:
-            if key == data[key]:
-                query[-1].model[key] = data[key]
+        for i, value in enumerate(data):
+            if keys[i] == 'Id':
+                query[-1].id = value
+            else:
+                query[-1].model[keys[i]].value = value
     return query

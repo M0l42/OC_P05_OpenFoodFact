@@ -1,120 +1,111 @@
 from script_db import connect_to_database
+from models import Product, Category, Favorite, get_all
 
 
-def check_int(input_str, id):
-    """
-    Function to make sure the user press a number and not something else
-    :param input_str:
-    :param id:
-    :return:
-    """
-    choice = input(input_str)
-    while type(choice) is str:
-        try:
-            choice = int(choice)
-            if choice in id:
-                return choice
-            else:
-                print("Veuillez entrer un chiffre valide")
-                choice = input(input_str)
-        except ValueError:
-            print("Veuillez entrer un chiffre")
-            choice = input(input_str)
+class UserInterface:
+    def __init__(self):
+        print("Bonjours !\nBienvenue chez Pur Beurre,")
+        self.my_db, self.my_cursor = connect_to_database()
 
-
-def find_substitute(my_cursor, chosen_category, sub_factor, sub_value, sub_id, max=0):
-    """
-    Find a substitute depending depending on an certain factor like the nutrition_grades
-    :param my_cursor:
-    :param chosen_category:
-    :param sub_factor:
-    :param sub_value:
-    :param max:
-    :return:
-    """
-    select_substitute = "SELECT id, name, nutrition_grade FROM Products " \
-                        "WHERE Categories_id = %s AND %s = %s" % (chosen_category, sub_factor, sub_value)
-    my_cursor.execute(select_substitute)
-
-    substitutes = my_cursor.fetchall()
-
-    for id, name, grade in substitutes[:5-max]:
-        print("%s : %s grade : %s" % (id, name, grade))
-        sub_id.append(id)
-    return substitutes, sub_id
-
-
-def main():
-    print("Bonjours !\nBienvenue chez Pur Beurre,")
-    choice = 0
-    mydb, my_cursor = connect_to_database()
-
-    while choice != 3:
-        choice = check_int("Entrer 1 si vous voulez chercher un nouveau produit\n"
-                           "Entrer 2 si vous voulez voir vos produits Favoris\n"
-                           "Entrer 3 pour partir\n", [1, 2, 3])
-
+    def choosing_option(self):
+        choice = self.check_int(input("Entrer 1 si vous voulez chercher un nouveau produit\n"
+                                      "Entrer 2 si vous voulez voir vos produits Favoris\n"
+                                      "Entrer 3 pour partir\n"), [1, 2, 3])
         if choice == 1:
-            # Find a product to substitute
-            my_cursor.execute('Select Id, name, products FROM Categories')
-
-            categories = my_cursor.fetchall()
-
-            print("Voici toute les categories disponibles : ")
-            category_id = []
-            for id, name, product in categories:
-                print("%s : %s (%s)" % (id, name, product))
-                category_id.append(id)
-
-            chosen_category = check_int("Veuillez entrée le chiffre de la "
-                                        "catégorie dont vous désirez voir les produits : ", category_id)
-            select_category = "SELECT id, name FROM Products WHERE Categories_id = %s"
-
-            my_cursor.execute(select_category, (chosen_category, ))
-
-            products = my_cursor.fetchall()
-            product_id = []
-            for id, name in products[:5]:
-                print("%s : %s" % (id, name))
-                product_id.append(id)
-
-            chosen_product = check_int("Veuillez entrée le chiffre du produit que vous voulez choisir : ", product_id)
-
-            substitutes_id = []
-            substitutes, substitutes_id = find_substitute(my_cursor, chosen_category,
-                                                          "nutrition_grade", "'a'", substitutes_id)
-
-            if len(substitutes) < 5:
-                substitutes, substitutes_id = find_substitute(my_cursor, chosen_category, "nutrition_grade", "'b'",
-                                                              substitutes_id, len(substitutes))
-
-            if len(substitutes) < 5:
-                substitutes, substitutes_id = find_substitute(my_cursor, chosen_category, "nutrition_grade", "'c'",
-                                                              substitutes_id, len(substitutes))
-
-            chosen_substitute = check_int("Veuillez entrée le chiffre du substitute "
-                                          "que vous voulez choisir : ", substitutes_id)
-
-            sql_favorite = "INSERT INTO Favorite (Product_id, Substitute_id) VALUES (%s, %s)"
-            my_cursor.execute(sql_favorite, (chosen_product, chosen_substitute))
-            mydb.commit()
-
-            print("Produit sauvegardé dans Favori")
-
+            self.get_new_product_favorite()
         elif choice == 2:
-            # Show user's Favorite product and substitute
-            my_cursor.execute("SELECT * FROM Favorite")
-            favorite_result = my_cursor.fetchall()
+            self.show_favorite()
+        else:
+            self.quit()
 
-            select_product = "SELECT name, url FROM Products WHERE Id = %s"
+    def get_new_product_favorite(self):
+        # Find a product to substitute
 
-            for Id, product, substitutes in favorite_result:
-                my_cursor.execute(select_product, (product,))
-                favorite_product = my_cursor.fetchall()
-                my_cursor.execute(select_product, (substitutes,))
-                favorite_substitute = my_cursor.fetchall()
-                print("%s, %s" % (favorite_product, favorite_substitute))
+        ###############################
+        #        SHOW CATEGORY        #
+        ###############################
+
+        print("Voici toute les categories disponibles : ")
+        category_id = self.get_data(Category())
+
+        chosen_category = self.check_int(input("Veuillez entrée le chiffre de la "
+                                         "catégorie dont vous désirez voir les produits : \n"), category_id)
+
+        ##############################
+        #        SHOW PRODUCT        #
+        ##############################
+
+        product_id = self.get_data(Product(), ["category"], [chosen_category])
+
+        chosen_product = self.check_int(input("Veuillez entrée le chiffre du produit que vous voulez choisir : "), product_id)
+
+        #################################
+        #        SHOW Substitute        #
+        #################################
+
+        nutrition_grades = ["a", "b", "c", "d", "e"]
+        substitutes_id = []
+        for grade in nutrition_grades:
+            substitutes_id = self.get_data(Product(), ["category", "nutrition_grade"],
+                                           [chosen_category, grade], substitutes_id)
+            if len(substitutes_id) >= 5:
+                break
+
+        chosen_substitute = self.check_int(input("Veuillez entrée le chiffre du substitute "
+                                           "que vous voulez choisir : \n"), substitutes_id)
+
+        ###############################
+        #        Save Favorite        #
+        ###############################
+
+        favorie = Favorite()
+        favorie.product_id.value = chosen_product
+        favorie.substitute_id.value = chosen_substitute
+        favorie.insert_data(self.my_cursor)
+        self.my_db.commit()
+
+        print("Produit sauvegardé dans Favori")
+
+    def show_favorite(self):
+        # Show user's Favorite product and substitute
+        # my_cursor.execute("SELECT * FROM Favorite")
+        favorite_result = get_all(Favorite(), self.my_cursor)
+
+        select_product = "SELECT name, url FROM Product WHERE Id = %s"
+
+        for favorie in favorite_result:
+            self.my_cursor.execute(select_product, (favorie.product_id.value,))
+            favorite_product = self.my_cursor.fetchall()
+            self.my_cursor.execute(select_product, (favorie.substitute_id.value,))
+            favorite_substitute = self.my_cursor.fetchall()
+            print("%s, %s" % (favorite_product, favorite_substitute))
+
+    def quit(self):
+        print("Au revoir !")
+
+    def get_data(self, model, filter_by=[], value=[], ids_list=[]):
+        for i, key in enumerate(filter_by):
+            test = getattr(model, key)
+            test.value = value[i]
+
+        data = get_all(model, self.my_cursor)
+        for prout in data[:5]:
+            print("%s : %s" % (prout.id, prout.name.value))
+            ids_list.append(prout.id)
+        return ids_list
+
+    @staticmethod
+    def check_int(choice, value):
+        while type(choice) is str:
+            try:
+                choice = int(choice)
+                if choice in value:
+                    return choice
+                else:
+                    choice = input("Veuillez entrer un chiffre valide")
+            except ValueError:
+                choice = input("Veuillez entrer un chiffre")
 
 
 if __name__ == '__main__':
-    main()
+    UserInterface().choosing_option()

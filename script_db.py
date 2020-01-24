@@ -103,12 +103,12 @@ def main():
     categories_url = "https://fr.openfoodfacts.org/categorie/"
     for category in data['tags']:
         new_category = Category()
-        new_category.model['name'].value = category['name']
-        new_category.model['tags'].value = category['id']
-        category_url = categories_url + new_category.model['tags'].value + ".json"
+        new_category.name.value = category['name']
+        new_category.tags.value = category['id']
+        category_url = categories_url + new_category.tags.value + ".json"
         # Get the number of product available in this category ( can change )
         r = requests.get(category_url, headers=headers)
-        new_category.model['products'].value = r.json()["count"]
+        new_category.products.value = r.json()["count"]
         new_category.insert_data(my_cursor)
         mydb.commit()
 
@@ -122,37 +122,37 @@ def main():
         payload = {"action": "process",
                    "tagtype_0": "categories",
                    "tag_contains_0": "contains",
-                   "tag_0": category.model['tags'].value,
+                   "tag_0": category.tags.value,
                    "page_size": 50,
                    "sort_by": "unique_scans_n",
                    "json": 1}
-        for i in range(int(category.model['products'].value/payload["page_size"])):
+        for i in range(int(category.products.value/payload["page_size"])):
             payload['page'] = i
             r = requests.get(search_url, headers=headers, params=payload)
             data = r.json()
             for product in data["products"]:
                 new_product = Product()
-                new_product.model['name'].value = check_error(product, 'product_name', '')
-                new_product.model['ingredients'].value = check_error(product, 'ingredients_text_fr', '') # true
-                new_product.model['url'].value = product['url']
-                new_product.model['code'].value = str(product['code'])
+                new_product.name.value = check_error(product, 'product_name', '')
+                new_product.ingredients.value = check_error(product, 'ingredients_text_fr', '') # true
+                new_product.url.value = product['url']
+                new_product.code.value = str(product['code'])
 
-                new_product.model['store'].value = check_error(product, 'stores', '') # true
-                new_product.model['category'].value = category.id
+                new_product.store.value = check_error(product, 'stores', '') # true
+                new_product.category.value = category.id
 
-                new_product.model['nutrition_grade'].value = check_error(product, 'nutrition_grades', '')
+                new_product.nutrition_grade.value = check_error(product, 'nutrition_grades', '')
 
-                new_product.model['salt_100'].value = check_error(product, 'nutriments', 'salt_100g')
-                new_product.model['salt_lvl'].value = check_error(product, 'nutrient_levels', 'salt')
+                new_product.salt_100.value = check_error(product, 'nutriments', 'salt_100g')
+                new_product.salt_lvl.value = check_error(product, 'nutrient_levels', 'salt')
 
-                new_product.model['sugar_100'].value = check_error(product, 'nutriments', 'sugars_100g')
-                new_product.model['sugar_lvl'].value = check_error(product, 'nutrient_levels','sugars')
+                new_product.sugar_100.value = check_error(product, 'nutriments', 'sugars_100g')
+                new_product.sugar_lvl.value = check_error(product, 'nutrient_levels','sugars')
 
-                new_product.model['fat_100'].value = check_error(product, 'nutriments', 'fat_100g')
-                new_product.model['fat_lvl'].value = check_error(product, 'nutrient_levels', 'fat')
+                new_product.fat_100.value = check_error(product, 'nutriments', 'fat_100g')
+                new_product.fat_lvl.value = check_error(product, 'nutrient_levels', 'fat')
 
-                new_product.model['saturated_fat_100'].value = check_error(product, 'nutriments', 'saturated-fat_100g')
-                new_product.model['saturated_fat_lvl'].value = check_error(product, 'nutrient_levels', 'saturated-fat')
+                new_product.saturated_fat_100.value = check_error(product, 'nutriments', 'saturated-fat_100g')
+                new_product.saturated_fat_lvl.value = check_error(product, 'nutrient_levels', 'saturated-fat')
 
                 new_product.insert_data(my_cursor)
 

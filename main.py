@@ -1,5 +1,5 @@
 from script_db import connect_to_database
-from models import Product, Category, Favorite, get_all
+from models import Product, Category, Favorite, get_all, Substitute
 
 
 class UserInterface:
@@ -37,7 +37,8 @@ class UserInterface:
 
         product_id = self.get_data(Product(), ["category"], [chosen_category])
 
-        chosen_product = self.check_int(input("Veuillez entrée le chiffre du produit que vous voulez choisir : "), product_id)
+        chosen_product = self.check_int(input("Veuillez entrée le chiffre du produit que vous voulez choisir : "),
+                                        product_id)
 
         #################################
         #        SHOW Substitute        #
@@ -54,33 +55,45 @@ class UserInterface:
         chosen_substitute = self.check_int(input("Veuillez entrée le chiffre du substitute "
                                            "que vous voulez choisir : \n"), substitutes_id)
 
+        #################################
+        #        Save Substitute        #
+        #################################
+
+        substitute = Product()
+        substitute.id = chosen_substitute
+        new_substitute = Substitute()
+        result = get_all(substitute, self.my_cursor)
+        for key in result[0].__dict__:
+            if key != "id":
+                value = getattr(result[0], key).value
+                getattr(new_substitute, key).value = value
+        sub_id = new_substitute.insert_data(self.my_cursor)
+
         ###############################
         #        Save Favorite        #
         ###############################
 
-        favorie = Favorite()
-        favorie.product_id.value = chosen_product
-        favorie.substitute_id.value = chosen_substitute
-        favorie.insert_data(self.my_cursor)
+        favorite = Favorite()
+        favorite.product_id.value = chosen_product
+        favorite.substitute_id.value = sub_id
+        favorite.insert_data(self.my_cursor)
         self.my_db.commit()
 
-        print("Produit sauvegardé dans Favori")
+        print("Produit sauvegardé dans les Favories")
+        self.choosing_option()
 
     def show_favorite(self):
+        #################################
+        #        SHOW Substitute        #
+        #################################
+
         # Show user's Favorite product and substitute
-        # my_cursor.execute("SELECT * FROM Favorite")
-        favorite_result = get_all(Favorite(), self.my_cursor)
+        self.get_data(Favorite())
 
-        select_product = "SELECT name, url FROM Product WHERE Id = %s"
+        self.choosing_option()
 
-        for favorie in favorite_result:
-            self.my_cursor.execute(select_product, (favorie.product_id.value,))
-            favorite_product = self.my_cursor.fetchall()
-            self.my_cursor.execute(select_product, (favorie.substitute_id.value,))
-            favorite_substitute = self.my_cursor.fetchall()
-            print("%s, %s" % (favorite_product, favorite_substitute))
-
-    def quit(self):
+    @staticmethod
+    def quit():
         print("Au revoir !")
 
     def get_data(self, model, filter_by=[], value=[], ids_list=[]):
@@ -89,9 +102,19 @@ class UserInterface:
             test.value = value[i]
 
         data = get_all(model, self.my_cursor)
-        for prout in data[:5]:
-            print("%s : %s" % (prout.id, prout.name.value))
-            ids_list.append(prout.id)
+        for new_model in data[:10]:
+            if type(model) == Favorite:
+                product = new_model.product_id.models
+                sub = new_model.substitute_id.models
+                info = "Produit : %s note %s, Substitue : %s note %s" % (product.name.value,
+                                                                         product.nutrition_grade.value,
+                                                                         sub.name.value, sub.nutrition_grade.value)
+            else:
+                info = "Id : %s, Name : %s" % (new_model.id, new_model.name.value)
+                if type(model) == Product:
+                    info += ", Note : %s" % new_model.nutrition_grade.value
+            print(info)
+            ids_list.append(new_model.id)
         return ids_list
 
     @staticmethod

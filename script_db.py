@@ -3,7 +3,7 @@ import os
 import json
 import argparse
 import mysql.connector
-from models import Product, Category, Favorite, get_all
+from models import Product, Category, Favorite, get_all, Substitute
 
 
 def set_params(arg_value, default_value):
@@ -89,6 +89,7 @@ def main():
 
     Category().save(my_cursor)
     Product().save(my_cursor)
+    Substitute().save(my_cursor)
     Favorite().save(my_cursor)
 
     # Load the categories stock in a json file,

@@ -4,20 +4,21 @@ import json
 import argparse
 import mysql.connector
 from models import Product, Category, Favorite, get_all, Substitute
+from settings import DB_CONFIG
 
 
-def set_params(arg_value, default_value):
+def set_params(arg_value, default_key):
     """
     put the default value in the argument if the users didn't put one
     :param arg_value:
-    :param default_value:
+    :param default_key:
     :return:
         Value of the argument or the default
     """
     if arg_value:
         return arg_value
     else:
-        return default_value
+        return DB_CONFIG[default_key]
 
 
 def check_error(check_data, first_arg, second_arg):
@@ -26,7 +27,6 @@ def check_error(check_data, first_arg, second_arg):
     :param check_data:
     :param first_arg:
     :param second_arg:
-    :param encode:
     :return:
         Value of the tags or None
     """
@@ -63,10 +63,10 @@ def connect_to_database():
 
     args = parser.parse_args()
 
-    host = set_params(args.host, 'localhost')
-    user = set_params(args.user, 'nathan')
-    pwd = args.pwd
-    db = set_params(args.database, 'pure-beurre')
+    host = set_params(args.host, 'host')
+    user = set_params(args.user, 'user')
+    pwd = set_params(args.pwd, 'password')
+    db = set_params(args.database, 'name')
 
     mydb = mysql.connector.connect(
         host=host,

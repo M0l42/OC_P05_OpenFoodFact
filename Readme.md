@@ -55,3 +55,5 @@ You have tree choice:
      ```
      It will show a product and its substitute with some details.
      ```
+     
+   * Quit

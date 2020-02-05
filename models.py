@@ -5,7 +5,11 @@ class Model:
         return cls.__name__
 
     def save(self, my_cursor):
-        command = "CREATE TABLE IF NOT EXISTS %s (Id INT PRIMARY KEY AUTO_INCREMENT" % self.get_classname()
+        """
+        Create Table according to the model
+        :param my_cursor:
+        """
+        command = "CREATE TABLE IF NOT EXISTS %s (id INT PRIMARY KEY AUTO_INCREMENT" % self.get_classname()
         for key in self.__dict__:
             attr = getattr(self, key)
             if type(attr) == CharField:
@@ -21,6 +25,12 @@ class Model:
         my_cursor.execute(command)
 
     def insert_data(self, my_cursor):
+        """
+        Insert the all the value of the model to the database
+
+        :param my_cursor:
+        :return: my_cursor.lastrowid
+        """
         command = "INSERT INTO %s (" % self.get_classname()
         keys = []
         values = []
@@ -99,29 +109,40 @@ class Favorite(Model):
 
 
 def get_all(models, mycursor):
-    keys = ["Id"]
+    """
+    Doing two things:
+        - Get all the data according to the model
+        - Create a query of instances with the data we just got.
+
+    :param models:
+    :param mycursor:
+    :return: query
+    """
+    keys = []
     foreign_keys = []
     filter_command = []
     join_command = []
     for key in models.__dict__:
-        if key != "id":
-            keys.append(key)
-            attr = getattr(models, key)
-            if type(attr) == ForeignKey:
-                foreign_model = attr.models.get_classname()
-                foreign_keys.append([foreign_model])
-                foreign_keys[-1].append(key)
-                for foreign_key in attr.models.__dict__:
-                    if foreign_key == "id":
-                        foreign_keys[-1].append("Id")
-                    else:
-                        foreign_keys[-1].append(foreign_key)
+        # get all the key in one list
+        # get all the foreign key in one list
+        keys.append(key)
+        attr = getattr(models, key)
+        if type(attr) == ForeignKey:
+            foreign_model = attr.models.get_classname()
+            foreign_keys.append([foreign_model])
+            foreign_keys[-1].append(key)
+            for foreign_key in attr.models.__dict__:
+                foreign_keys[-1].append(foreign_key)
+
+    # Create the command with its join and filter
     command = "SELECT " + ",".join("%s.%s" % (models.get_classname(), key) for key in keys)
+
     for key in foreign_keys:
         command += "," + ",".join("%s.%s" % (key[0], value) for value in key[2:])
+
     command += " FROM " + models.get_classname()
     for key in keys:
-        if key == "Id":
+        if key == "id":
             if models.id:
                 filter_command.append("%s = %s" % (key, models.id))
         else:
@@ -132,16 +153,20 @@ def get_all(models, mycursor):
                                                                          attr.models.get_classname()))
             if attr.value:
                 filter_command.append('%s = "%s"' % (key, attr.value))
+
     if join_command:
         command += "".join(join_command)
+
     if filter_command:
         command += " WHERE " + " AND ".join("%s.%s" % (models.get_classname(), value) for value in filter_command)
+
     mycursor.execute(command)
     results = mycursor.fetchall()
 
     query = []
 
     for data in results:
+        # Creating a query of new instances
         if type(models) == Product:
             query.append(Product())
         if type(models) == Category:
@@ -149,13 +174,15 @@ def get_all(models, mycursor):
         if type(models) == Favorite:
             query.append(Favorite())
         for i, value in enumerate(data):
+            # Populate the new instance with its proper values
             if i < len(keys):
-                if keys[i] == "Id":
+                if keys[i] == "id":
                     query[-1].id = value
                 else:
                     attr = getattr(query[-1], keys[i])
                     attr.value = value
             else:
+                # Populate the model of the foreign key
                 index = len(keys)
                 index_fk = 0
                 for key in foreign_keys:
@@ -163,7 +190,7 @@ def get_all(models, mycursor):
                         index += len(key[2:])
                         index_fk += 1
                 attr = getattr(query[-1], foreign_keys[index_fk][1]).models
-                if foreign_keys[index_fk][2 + i-index] == "Id":
+                if foreign_keys[index_fk][2 + i-index] == "id":
                     attr.id = value
                 else:
                     attr_fk = getattr(attr, foreign_keys[index_fk][2 + i-index])

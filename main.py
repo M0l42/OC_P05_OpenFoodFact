@@ -8,7 +8,8 @@ class UserInterface:
         self.my_db, self.my_cursor = connect_to_database()
 
     def choosing_option(self):
-        choice = self.check_int(input("Entrer 1 si vous voulez chercher un nouveau produit\n"
+        # Application's menu, this is where the user can choice what to do
+        choice = self.check_int(input("\nEntrer 1 si vous voulez chercher un nouveau produit\n"
                                       "Entrer 2 si vous voulez voir vos produits Favoris\n"
                                       "Entrer 3 pour partir\n"), [1, 2, 3])
         if choice == 1:
@@ -20,6 +21,7 @@ class UserInterface:
 
     def get_new_product_favorite(self):
         # Find a product to substitute
+        # And add the product and his substitute to Favorite
 
         ###############################
         #        SHOW CATEGORY        #
@@ -83,9 +85,9 @@ class UserInterface:
         self.choosing_option()
 
     def show_favorite(self):
-        #################################
-        #        SHOW Substitute        #
-        #################################
+        ###############################
+        #        SHOW Favorite        #
+        ###############################
 
         # Show user's Favorite product and substitute
         self.get_data(Favorite())
@@ -97,12 +99,25 @@ class UserInterface:
         print("Au revoir !")
 
     def get_data(self, model, filter_by=[], value=[], ids_list=[]):
+        """
+        Get the data from a specific model
+        Then we show the different option to choose and the information with it
+
+        :param model:
+        :param filter_by:
+        :param value:
+        :param ids_list:
+        :return: ids_list
+        """
         for i, key in enumerate(filter_by):
             test = getattr(model, key)
             test.value = value[i]
 
-        data = get_all(model, self.my_cursor)
-        for new_model in data[:10]:
+        if type(model) in {Category, Favorite}:
+            data = get_all(model, self.my_cursor)
+        else:
+            data = get_all(model, self.my_cursor)[:5]
+        for new_model in data:
             if type(model) == Favorite:
                 product = new_model.product_id.models
                 sub = new_model.substitute_id.models
@@ -119,6 +134,14 @@ class UserInterface:
 
     @staticmethod
     def check_int(choice, value):
+        """
+        check the input of the user
+        keep asking until we have a valid input
+
+        :param choice:
+        :param value:
+        :return: choice
+        """
         while type(choice) is str:
             try:
                 choice = int(choice)

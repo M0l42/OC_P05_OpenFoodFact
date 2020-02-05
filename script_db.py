@@ -7,18 +7,17 @@ from models import Product, Category, Favorite, get_all, Substitute
 from settings import DB_CONFIG
 
 
-def set_params(arg_value, default_key):
+def set_params(arg_value, key):
     """
-    put the default value in the argument if the users didn't put one
+    Put the default value in the argument if the users didn't put one
     :param arg_value:
-    :param default_key:
-    :return:
-        Value of the argument or the default
+    :param key:
+    :return: Value of the argument or the default value
     """
     if arg_value:
         return arg_value
     else:
-        return DB_CONFIG[default_key]
+        return DB_CONFIG[key]
 
 
 def check_error(check_data, first_arg, second_arg):
@@ -27,8 +26,7 @@ def check_error(check_data, first_arg, second_arg):
     :param check_data:
     :param first_arg:
     :param second_arg:
-    :return:
-        Value of the tags or None
+    :return: Value of the tags or None
     """
     try:
         if second_arg:
@@ -43,9 +41,7 @@ def connect_to_database():
     """
     connect to the database
     create database if it doens't exist
-    :return:
-        database
-        cursor
+    :return: my_db, my_cursor
     """
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
@@ -68,25 +64,26 @@ def connect_to_database():
     pwd = set_params(args.pwd, 'password')
     db = set_params(args.database, 'name')
 
-    mydb = mysql.connector.connect(
+    my_db = mysql.connector.connect(
         host=host,
         user=user,
         password=pwd,
     )
 
-    my_cursor = mydb.cursor()
+    my_cursor = my_db.cursor()
 
     my_cursor.execute("CREATE DATABASE IF NOT EXISTS %s" % db)
 
-    mydb.connect(database=db)
-    return mydb, my_cursor
+    my_db.connect(database=db)
+    return my_db, my_cursor
 
 
 def main():
-    mydb, my_cursor = connect_to_database()
+    my_db, my_cursor = connect_to_database()
 
     # Creating our tables
 
+    print("Create Table if not existing")
     Category().save(my_cursor)
     Product().save(my_cursor)
     Substitute().save(my_cursor)
@@ -102,7 +99,9 @@ def main():
         data = json.load(file)
 
     categories_url = "https://fr.openfoodfacts.org/categorie/"
+    print("Loading category")
     for category in data['tags']:
+        # Get the data wanted from json file
         new_category = Category()
         new_category.name.value = category['name']
         new_category.tags.value = category['id']
@@ -110,8 +109,9 @@ def main():
         # Get the number of product available in this category ( can change )
         r = requests.get(category_url, headers=headers)
         new_category.products.value = r.json()["count"]
+
         new_category.insert_data(my_cursor)
-        mydb.commit()
+        my_db.commit()
 
     categories = get_all(Category(), my_cursor)
 
@@ -119,6 +119,8 @@ def main():
 
     for category in categories:
         # Load all the product of the category and put in database
+
+        print("Start loading product from category %s" % category.name.value)
 
         payload = {"action": "process",
                    "tagtype_0": "categories",
@@ -128,17 +130,20 @@ def main():
                    "sort_by": "unique_scans_n",
                    "json": 1}
         for i in range(int(category.products.value/payload["page_size"])):
+            # Get all the data wanted from the request we made
+            # Get through every page of the category's product
             payload['page'] = i
+            print("Loading page %d from category %s" % (i, category.name.value))
             r = requests.get(search_url, headers=headers, params=payload)
             data = r.json()
             for product in data["products"]:
                 new_product = Product()
                 new_product.name.value = check_error(product, 'product_name', '')
-                new_product.ingredients.value = check_error(product, 'ingredients_text_fr', '') # true
+                new_product.ingredients.value = check_error(product, 'ingredients_text_fr', '')
                 new_product.url.value = product['url']
                 new_product.code.value = str(product['code'])
 
-                new_product.store.value = check_error(product, 'stores', '') # true
+                new_product.store.value = check_error(product, 'stores', '')
                 new_product.category.value = category.id
 
                 new_product.nutrition_grade.value = check_error(product, 'nutrition_grades', '')
@@ -157,7 +162,9 @@ def main():
 
                 new_product.insert_data(my_cursor)
 
-                mydb.commit()
+                my_db.commit()
+
+    print("\n Database is ready to be used")
 
 
 if __name__ == '__main__':
